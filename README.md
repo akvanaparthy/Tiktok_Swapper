@@ -39,7 +39,8 @@ tiktok-swapper/
 1. **Configure credentials:**
    - Copy `.env.example` to `.env`
    - Fill in your API credentials
-   - **Multiple API Keys Supported!** Add FAL_API_KEY_1, FAL_API_KEY_2, etc. for automatic rotation
+   - **Separate keys for image and video generation:** Use different keys for FAL_IMAGE_API_KEY_* and FAL_VIDEO_API_KEY_*
+   - **Multiple API Keys Supported!** Add multiple keys for automatic rotation
 
 2. **Configure Airtable:**
    - Create a `Configuration` table with fields:
@@ -82,13 +83,17 @@ npm run dev
 - `APIFY_TOKEN`: Your Apify API token (for video scraping)
 
 **API Keys (add multiple for automatic rotation):**
-- `FAL_API_KEY_1`, `FAL_API_KEY_2`, `FAL_API_KEY_3`, ... (FAL.ai keys)
-- `WAVESPEED_API_KEY_1`, `WAVESPEED_API_KEY_2`, ... (Wavespeed keys)
+- `FAL_IMAGE_API_KEY_1`, `FAL_IMAGE_API_KEY_2`, ... (FAL.ai image generation keys)
+- `FAL_VIDEO_API_KEY_1`, `FAL_VIDEO_API_KEY_2`, ... (FAL.ai video generation keys)
+- `WAVESPEED_IMAGE_API_KEY_1`, `WAVESPEED_IMAGE_API_KEY_2`, ... (Wavespeed image keys)
+- `WAVESPEED_VIDEO_API_KEY_1`, `WAVESPEED_VIDEO_API_KEY_2`, ... (Wavespeed video keys)
 
 **API Rotation Settings:**
-- `FAL_REQUESTS_PER_KEY`: How many requests each FAL key handles before rotating (default: 1)
-- `WAVESPEED_REQUESTS_PER_KEY`: How many requests each Wavespeed key handles before rotating (default: 1)
-- Set to `0` or `1` for round-robin (alternates every request)
+- `FAL_IMAGE_REQUESTS_PER_KEY`: How many requests each FAL image key handles before rotating (default: 1)
+- `FAL_VIDEO_REQUESTS_PER_KEY`: How many requests each FAL video key handles before rotating (default: 1)
+- `WAVESPEED_IMAGE_REQUESTS_PER_KEY`: How many requests each Wavespeed image key handles before rotating (default: 1)
+- `WAVESPEED_VIDEO_REQUESTS_PER_KEY`: How many requests each Wavespeed video key handles before rotating (default: 1)
+- Set to `1` for round-robin (alternates every request)
 - Set to higher number (e.g., `10`) to use each key 10 times before rotating
 
 **Optional:**
@@ -110,20 +115,28 @@ Edit `src/config/index.js` to adjust:
 - Automatic failover if one key has issues
 
 **How it works:**
-1. Add multiple keys: `FAL_API_KEY_1=key1`, `FAL_API_KEY_2=key2`, etc.
-2. System automatically rotates between keys
+1. Add multiple keys with separate pools for images and videos
+2. System automatically rotates between keys within each pool
 3. State persisted in database - resumes correctly after restart
-4. Separate rotation for image gen and video gen
+4. Completely separate rotation tracking for image gen and video gen
 
 **Example `.env` for 3 FAL keys:**
 ```bash
-FAL_API_KEY_1=fal_key_abc123
-FAL_API_KEY_2=fal_key_def456
-FAL_API_KEY_3=fal_key_ghi789
-FAL_REQUESTS_PER_KEY=5  # Use each key 5 times before rotating
+# Image generation keys
+FAL_IMAGE_API_KEY_1=fal_image_abc123
+FAL_IMAGE_API_KEY_2=fal_image_def456
+FAL_IMAGE_API_KEY_3=fal_image_ghi789
+FAL_IMAGE_REQUESTS_PER_KEY=5  # Use each image key 5 times before rotating
+
+# Video generation keys (different from image keys)
+FAL_VIDEO_API_KEY_1=fal_video_jkl012
+FAL_VIDEO_API_KEY_2=fal_video_mno345
+FAL_VIDEO_REQUESTS_PER_KEY=2  # Use each video key 2 times before rotating
 ```
 
-Result: Key 1 → 5 requests → Key 2 → 5 requests → Key 3 → 5 requests → Key 1 (loop)
+Result:
+- Image: Key 1 → 5 requests → Key 2 → 5 requests → Key 3 → 5 requests → Key 1 (loop)
+- Video: Key 1 → 2 requests → Key 2 → 2 requests → Key 1 (loop)
 
 ## Job Queue
 
@@ -143,11 +156,14 @@ Logs are written to:
 
 ## Migration from v1.x
 
-**v2.0 now uses `.env` files instead of `apis.json`:**
+**v2.0 now uses `.env` files with separate image/video API keys:**
 
 1. Copy `.env.example` to `.env`
 2. Transfer your credentials from old `apis.json` to `.env`
-3. **Bonus:** Add multiple API keys for automatic rotation!
+3. **Important:** Use separate keys for image and video generation:
+   - `FAL_IMAGE_API_KEY_1` for image generation
+   - `FAL_VIDEO_API_KEY_1` for video generation
+4. **Bonus:** Add multiple API keys for automatic rotation!
 
 ## Troubleshooting
 

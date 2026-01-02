@@ -29,19 +29,39 @@ const config = {
   },
   apiKeys: {
     apify: process.env.APIFY_TOKEN || '',
-    fal: loadMultipleKeys('FAL_API_KEY'),
-    wavespeed: loadMultipleKeys('WAVESPEED_API_KEY')
+    fal: {
+      image: loadMultipleKeys('FAL_IMAGE_API_KEY'),
+      video: loadMultipleKeys('FAL_VIDEO_API_KEY')
+    },
+    wavespeed: {
+      image: loadMultipleKeys('WAVESPEED_IMAGE_API_KEY'),
+      video: loadMultipleKeys('WAVESPEED_VIDEO_API_KEY')
+    }
   },
   apiRotation: {
     fal: {
-      requestsPerKey: parseInt(process.env.FAL_REQUESTS_PER_KEY || '1'),
-      currentIndex: 0,
-      currentCount: 0
+      image: {
+        requestsPerKey: parseInt(process.env.FAL_IMAGE_REQUESTS_PER_KEY || '1'),
+        currentIndex: 0,
+        currentCount: 0
+      },
+      video: {
+        requestsPerKey: parseInt(process.env.FAL_VIDEO_REQUESTS_PER_KEY || '1'),
+        currentIndex: 0,
+        currentCount: 0
+      }
     },
     wavespeed: {
-      requestsPerKey: parseInt(process.env.WAVESPEED_REQUESTS_PER_KEY || '1'),
-      currentIndex: 0,
-      currentCount: 0
+      image: {
+        requestsPerKey: parseInt(process.env.WAVESPEED_IMAGE_REQUESTS_PER_KEY || '1'),
+        currentIndex: 0,
+        currentCount: 0
+      },
+      video: {
+        requestsPerKey: parseInt(process.env.WAVESPEED_VIDEO_REQUESTS_PER_KEY || '1'),
+        currentIndex: 0,
+        currentCount: 0
+      }
     }
   },
   processing: {
@@ -64,11 +84,20 @@ function validateConfig() {
   if (!config.apiKeys?.apify) errors.push('APIFY_TOKEN is missing');
 
   // Check if at least one provider has API keys
-  const hasFal = config.apiKeys.fal.length > 0;
-  const hasWavespeed = config.apiKeys.wavespeed.length > 0;
+  const hasFalImage = config.apiKeys.fal.image.length > 0;
+  const hasFalVideo = config.apiKeys.fal.video.length > 0;
+  const hasWavespeedImage = config.apiKeys.wavespeed.image.length > 0;
+  const hasWavespeedVideo = config.apiKeys.wavespeed.video.length > 0;
+
+  const hasFal = hasFalImage && hasFalVideo;
+  const hasWavespeed = hasWavespeedImage && hasWavespeedVideo;
 
   if (!hasFal && !hasWavespeed) {
-    errors.push('At least one API provider is required (FAL_API_KEY_1 or WAVESPEED_API_KEY_1)');
+    errors.push('At least one complete API provider is required');
+    if (!hasFalImage) errors.push('FAL_IMAGE_API_KEY_1 is missing');
+    if (!hasFalVideo) errors.push('FAL_VIDEO_API_KEY_1 is missing');
+    if (!hasWavespeedImage) errors.push('WAVESPEED_IMAGE_API_KEY_1 is missing');
+    if (!hasWavespeedVideo) errors.push('WAVESPEED_VIDEO_API_KEY_1 is missing');
   }
 
   if (errors.length > 0) {
@@ -90,7 +119,9 @@ if (nodeVersion < 18) {
 }
 
 // Log loaded API keys count
-console.log(`Loaded ${config.apiKeys.fal.length} FAL.ai API key(s)`);
-console.log(`Loaded ${config.apiKeys.wavespeed.length} Wavespeed API key(s)`);
+console.log(`Loaded ${config.apiKeys.fal.image.length} FAL.ai IMAGE API key(s)`);
+console.log(`Loaded ${config.apiKeys.fal.video.length} FAL.ai VIDEO API key(s)`);
+console.log(`Loaded ${config.apiKeys.wavespeed.image.length} Wavespeed IMAGE API key(s)`);
+console.log(`Loaded ${config.apiKeys.wavespeed.video.length} Wavespeed VIDEO API key(s)`);
 
 export default config;

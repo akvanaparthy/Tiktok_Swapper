@@ -53,24 +53,32 @@ export class Processor {
     const videoResolution = configFields.Video_Resolution || '480p';
     const enableNSFW = configFields.Enable_NSFW || false;
 
-    const falApiKeys = config.apiKeys.fal;
-    const wavespeedApiKeys = config.apiKeys.wavespeed;
+    const falImageKeys = config.apiKeys.fal.image;
+    const falVideoKeys = config.apiKeys.fal.video;
+    const wavespeedImageKeys = config.apiKeys.wavespeed.image;
+    const wavespeedVideoKeys = config.apiKeys.wavespeed.video;
 
     // Validate API keys
-    if (apiProvider === 'FAL.ai' && falApiKeys.length === 0) {
-      throw new Error('FAL.ai API key is missing');
+    if (apiProvider === 'FAL.ai' && (falImageKeys.length === 0 || falVideoKeys.length === 0)) {
+      throw new Error('FAL.ai IMAGE and VIDEO API keys are required');
     }
-    if (apiProvider === 'Wavespeed' && wavespeedApiKeys.length === 0) {
-      throw new Error('Wavespeed API key is missing');
+    if (apiProvider === 'Wavespeed' && (wavespeedImageKeys.length === 0 || wavespeedVideoKeys.length === 0)) {
+      throw new Error('Wavespeed IMAGE and VIDEO API keys are required');
     }
 
-    const apiKeys = apiProvider === 'FAL.ai' ? falApiKeys : wavespeedApiKeys;
-    const requestsPerKey = apiProvider === 'FAL.ai' ?
-      config.apiRotation.fal.requestsPerKey :
-      config.apiRotation.wavespeed.requestsPerKey;
+    const imageApiKeys = apiProvider === 'FAL.ai' ? falImageKeys : wavespeedImageKeys;
+    const videoApiKeys = apiProvider === 'FAL.ai' ? falVideoKeys : wavespeedVideoKeys;
 
-    const imageAPI = createImageProvider(apiProvider, imageModel, apiKeys, requestsPerKey, this.rotationManager, httpsAgent);
-    const videoAPI = createVideoProvider(apiProvider, apiKeys, requestsPerKey, this.rotationManager, httpsAgent);
+    const imageRequestsPerKey = apiProvider === 'FAL.ai' ?
+      config.apiRotation.fal.image.requestsPerKey :
+      config.apiRotation.wavespeed.image.requestsPerKey;
+
+    const videoRequestsPerKey = apiProvider === 'FAL.ai' ?
+      config.apiRotation.fal.video.requestsPerKey :
+      config.apiRotation.wavespeed.video.requestsPerKey;
+
+    const imageAPI = createImageProvider(apiProvider, imageModel, imageApiKeys, imageRequestsPerKey, this.rotationManager, httpsAgent);
+    const videoAPI = createVideoProvider(apiProvider, videoApiKeys, videoRequestsPerKey, this.rotationManager, httpsAgent);
 
     logger.info('Configuration loaded', {
       apiProvider,
@@ -79,8 +87,10 @@ export class Processor {
       videoAPI: videoAPI.getName(),
       numImages,
       videoResolution,
-      apiKeyCount: apiKeys.length,
-      requestsPerKey
+      imageApiKeyCount: imageApiKeys.length,
+      videoApiKeyCount: videoApiKeys.length,
+      imageRequestsPerKey,
+      videoRequestsPerKey
     });
 
     return {
