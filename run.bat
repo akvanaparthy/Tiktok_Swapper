@@ -1,9 +1,6 @@
 @echo off
-title TikTok Replicator
-echo ============================================
-echo    TikTok Replicator - Starting...
-echo ============================================
-echo.
+title TikTok Swapper
+echo  Starting TikTok Swapper
 
 cd /d "%~dp0"
 
@@ -19,8 +16,4 @@ if %ERRORLEVEL% neq 0 (
 :: Run the processor
 node batch-processor.js
 
-echo.
-echo ============================================
-echo    Processing Complete
-echo ============================================
-pause
+echo Completed
