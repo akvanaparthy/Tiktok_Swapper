@@ -1,13 +1,12 @@
 node_modules/
 .env
 .env.local
-temp/
-bin/
 *.log
+logs/
+queue.db
 .DS_Store
 *.mp4
 *.mov
-output/
+*.old
 
 .claude
-.logs/*
