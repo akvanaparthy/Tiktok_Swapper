@@ -1,0 +1,19 @@
+{
+  "name": "tiktok-swapper",
+  "version": "2.0.0",
+  "description": "TikTok/Instagram video character swapper using AI",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "winston": "^3.11.0",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

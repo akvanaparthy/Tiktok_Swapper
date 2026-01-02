@@ -8,3 +8,6 @@ bin/
 *.mp4
 *.mov
 output/
+
+.claude
+.logs/*

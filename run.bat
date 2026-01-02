@@ -13,7 +13,14 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
+:: Auto-install dependencies if needed
+if not exist node_modules (
+    echo Installing dependencies...
+    call npm install
+    echo.
+)
+
 :: Run the processor
-node batch-processor.js
+node src/index.js
 
 echo Completed
