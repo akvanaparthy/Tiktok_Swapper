@@ -1,0 +1,11 @@
+{
+  "airtable": {
+    "baseId": "",
+    "token": ""
+  },
+  "apiKeys": {
+    "apify": "",
+    "fal": "",
+    "wavespeed": ""
+  }
+}

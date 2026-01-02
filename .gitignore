@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+temp/
+bin/
+*.log
+.DS_Store
+*.mp4
+*.mov
+output/

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Replicator Config</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:system-ui,sans-serif;background:#1a1a2e;min-height:100vh;padding:30px;color:#e0e0e0}
+        .container{max-width:500px;margin:0 auto}
+        h1{text-align:center;margin-bottom:25px;color:#ff6b6b}
+        .card{background:rgba(255,255,255,0.05);border-radius:10px;padding:20px;margin-bottom:15px}
+        .card h2{font-size:14px;color:#ff6b6b;margin-bottom:12px}
+        .form-group{margin-bottom:12px}
+        label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#888;margin-bottom:4px}
+        label a{color:#ff6b6b;text-decoration:none;font-size:10px;font-weight:600}
+        label a:hover{text-decoration:underline}
+        input{width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-family:monospace;font-size:13px}
+        input:focus{outline:none;border-color:#ff6b6b}
+        .btn{width:100%;padding:12px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px}
+        .btn-primary{background:#ff6b6b;color:#000}
+        .btn-primary:hover{background:#ff5252}
+        .hint{font-size:11px;color:#666;margin-top:8px;text-align:center}
+        .status{text-align:center;padding:10px;border-radius:6px;margin-top:10px;display:none}
+        .status.success{display:block;background:rgba(255,107,107,0.15);color:#ff6b6b}
+        .status.error{display:block;background:rgba(255,100,100,0.15);color:#ff6b6b}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TikTok Replicator Config</h1>
+
+        <div class="card">
+            <h2>Airtable</h2>
+            <div class="form-group">
+                <label>Base ID</label>
+                <input type="text" id="baseId" placeholder="appXXXXXXXXXXXXXX">
+            </div>
+            <div class="form-group">
+                <label>Token <a href="https://airtable.com/create/tokens" target="_blank">GET HERE</a></label>
+                <input type="text" id="token" placeholder="patXXXXXXXXXXXXXX">
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Video Download (Apify)</h2>
+            <div class="form-group">
+                <label>Apify API Token <a href="https://console.apify.com/account/integrations" target="_blank">GET HERE</a></label>
+                <input type="text" id="apify" placeholder="apify_api_XXXXX">
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Image & Video Generation</h2>
+            <div class="form-group">
+                <label>FAL.ai API Key <a href="https://fal.ai/dashboard/keys" target="_blank">GET HERE</a></label>
+                <input type="text" id="fal" placeholder="(optional if using Wavespeed)">
+            </div>
+            <div class="form-group">
+                <label>Wavespeed API Key <a href="https://wavespeed.ai/accesskey" target="_blank">GET HERE</a></label>
+                <input type="text" id="wavespeed" placeholder="(optional if using FAL.ai)">
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="save()">Save Configuration</button>
+        <div id="status" class="status"></div>
+        <p class="hint">On first save, select "apis.json" file in this folder.<br>After that, it will save automatically.</p>
+    </div>
+
+    <script>
+        let fileHandle = null;
+
+        // Try to load from localStorage on start
+        window.onload = async () => {
+            const saved = localStorage.getItem('tiktok-replicator');
+            if (saved) {
+                try {
+                    fillForm(JSON.parse(saved));
+                } catch(e) {}
+            }
+        };
+
+        function fillForm(c) {
+            document.getElementById('baseId').value = c.airtable?.baseId || '';
+            document.getElementById('token').value = c.airtable?.token || '';
+            document.getElementById('apify').value = c.apiKeys?.apify || '';
+            document.getElementById('fal').value = c.apiKeys?.fal || '';
+            document.getElementById('wavespeed').value = c.apiKeys?.wavespeed || '';
+        }
+
+        function getFormData() {
+            return {
+                airtable: {
+                    baseId: document.getElementById('baseId').value.trim(),
+                    token: document.getElementById('token').value.trim()
+                },
+                apiKeys: {
+                    apify: document.getElementById('apify').value.trim(),
+                    fal: document.getElementById('fal').value.trim(),
+                    wavespeed: document.getElementById('wavespeed').value.trim()
+                }
+            };
+        }
+
+        function showStatus(msg, isError = false) {
+            const s = document.getElementById('status');
+            s.textContent = msg;
+            s.className = 'status ' + (isError ? 'error' : 'success');
+            setTimeout(() => s.className = 'status', 3000);
+        }
+
+        async function save() {
+            const config = getFormData();
+            const json = JSON.stringify(config, null, 2);
+
+            // Save to localStorage as backup
+            localStorage.setItem('tiktok-replicator', json);
+
+            try {
+                // If we don't have a file handle, ask user to pick/create file
+                if (!fileHandle) {
+                    fileHandle = await window.showSaveFilePicker({
+                        suggestedName: 'apis.json',
+                        types: [{
+                            description: 'JSON',
+                            accept: { 'application/json': ['.json'] }
+                        }]
+                    });
+                }
+
+                // Write to file
+                const writable = await fileHandle.createWritable();
+                await writable.write(json);
+                await writable.close();
+
+                showStatus('Saved to apis.json!');
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    showStatus('Cancelled', true);
+                } else {
+                    showStatus('Error: ' + e.message, true);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
