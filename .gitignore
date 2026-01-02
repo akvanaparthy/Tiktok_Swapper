@@ -1,16 +1,42 @@
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
 .env.local
+
+# Logs (but keep the viewer)
+logs/*.log
+logs/error.log
+logs/combined.log
+
+# Directories
 temp/
 bin/
-*.log
-!logs/viewer.html
-.DS_Store
+output/
+
+# Media files
 *.mp4
 *.mov
-output/
+*.avi
+*.mkv
+
+# Database
 queue.db
 
+# IDE & Editor
 .claude
-.logs/*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak
+*.backup
 
