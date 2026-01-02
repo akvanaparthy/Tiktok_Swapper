@@ -85,10 +85,6 @@ function detectPlatform(url) {
   return null;
 }
 
-// ============================================================================
-// CONCURRENCY LIMITER
-// ============================================================================
-
 class ConcurrencyLimiter {
   constructor(maxConcurrent) {
     this.max = maxConcurrent;
@@ -114,10 +110,6 @@ class ConcurrencyLimiter {
     return { running: this.running, queued: this.queue.length };
   }
 }
-
-// ============================================================================
-// CIRCUIT BREAKER
-// ============================================================================
 
 class CircuitBreaker {
   constructor(threshold = 5, cooldownMs = 60000) {
@@ -150,10 +142,6 @@ class CircuitBreaker {
   }
 }
 
-// ============================================================================
-// PROGRESS TRACKER
-// ============================================================================
-
 class ProgressTracker {
   constructor() {
     this.total = 0;
@@ -174,42 +162,17 @@ class ProgressTracker {
   }
 
   showProgress(concurrencyLimiter) {
-    const elapsed = (Date.now() - this.startTime) / 1000;
     const pct = this.total > 0 ? Math.round((this.processed / this.total) * 100) : 0;
-    const rate = this.processed / elapsed;
-    const remaining = this.total - this.processed;
-    const eta = remaining > 0 && rate > 0 ? Math.round(remaining / rate) : 0;
-
-    const bar = '='.repeat(Math.round(pct * 0.3)) + '-'.repeat(30 - Math.round(pct * 0.3));
-
-    console.log(`\n[${bar}] ${pct}%`);
-    console.log(`   Processed: ${this.processed}/${this.total}`);
-    console.log(`   Success: ${this.success} | Failed: ${this.failed}`);
-    console.log(`   Rate: ${rate.toFixed(2)}/sec | ETA: ${eta}s`);
-    if (concurrencyLimiter) {
-      const stats = concurrencyLimiter.getStats();
-      console.log(`   Concurrent: ${stats.running} running, ${stats.queued} queued`);
-    }
+    console.log(`Progress: ${this.processed}/${this.total} (${pct}%) | Success: ${this.success} | Failed: ${this.failed}`);
   }
 
   showFinalSummary() {
     const elapsed = (Date.now() - this.startTime) / 1000;
-    console.log('\n' + '='.repeat(60));
-    console.log('FINAL SUMMARY');
-    console.log('='.repeat(60));
-    console.log(`Total: ${this.processed}`);
-    console.log(`Success: ${this.success} | Failed: ${this.failed}`);
-    console.log(`Time: ${Math.round(elapsed)}s`);
-    console.log('='.repeat(60));
+    console.log(`\nComplete: ${this.processed} total | ${this.success} success | ${this.failed} failed | ${Math.round(elapsed)}s`);
   }
 }
 
-// ============================================================================
-// APIFY - TIKTOK SCRAPER
-// ============================================================================
-
 async function fetchTikTokVideo(url, apifyToken) {
-  console.log(`[Apify TikTok] Fetching: ${url}`);
 
   // Use tiktok-video-scraper for individual video URLs with video download enabled
   const actorId = 'clockworks~tiktok-video-scraper';
@@ -239,8 +202,6 @@ async function fetchTikTokVideo(url, apifyToken) {
   const runId = runData.data.id;
   const datasetId = runData.data.defaultDatasetId;
 
-  console.log(`[Apify TikTok] Run started: ${runId}`);
-
   // Wait for completion
   let status = 'RUNNING';
   let attempts = 0;
@@ -261,8 +222,6 @@ async function fetchTikTokVideo(url, apifyToken) {
 
     const statusData = await statusResponse.json();
     status = statusData.data.status;
-
-    console.log(`[Apify TikTok] Status: ${status} (attempt ${attempts})`);
   }
 
   if (status !== 'SUCCEEDED') {
@@ -321,12 +280,7 @@ async function fetchTikTokVideo(url, apifyToken) {
   return { videoUrl, coverUrl, width, height };
 }
 
-// ============================================================================
-// APIFY - INSTAGRAM REEL SCRAPER
-// ============================================================================
-
 async function fetchInstagramReel(url, apifyToken) {
-  console.log(`[Apify Instagram] Fetching: ${url}`);
 
   // Use instagram-api-scraper which supports direct reel URLs
   const actorId = 'apify~instagram-api-scraper';
@@ -356,8 +310,6 @@ async function fetchInstagramReel(url, apifyToken) {
   const runId = runData.data.id;
   const datasetId = runData.data.defaultDatasetId;
 
-  console.log(`[Apify Instagram] Run started: ${runId}`);
-
   // Wait for completion
   let status = 'RUNNING';
   let attempts = 0;
@@ -378,8 +330,6 @@ async function fetchInstagramReel(url, apifyToken) {
 
     const statusData = await statusResponse.json();
     status = statusData.data.status;
-
-    console.log(`[Apify Instagram] Status: ${status} (attempt ${attempts})`);
   }
 
   if (status !== 'SUCCEEDED') {
@@ -427,10 +377,6 @@ async function fetchInstagramReel(url, apifyToken) {
   return { videoUrl, coverUrl, width, height };
 }
 
-// ============================================================================
-// IMAGE URL TO DATA URI
-// ============================================================================
-
 async function urlToDataUri(url) {
   if (url.startsWith('data:')) return url;
 
@@ -444,10 +390,6 @@ async function urlToDataUri(url) {
   const contentType = response.headers.get('content-type') || 'image/jpeg';
   return `data:${contentType};base64,${base64}`;
 }
-
-// ============================================================================
-// SEEDREAM 4.0 API - FAL.ai
-// ============================================================================
 
 class FalSeedream40API {
   constructor(apiKey) {
@@ -578,10 +520,6 @@ class WavespeedSeedream40API {
   }
 }
 
-// ============================================================================
-// SEEDREAM 4.5 API - FAL.ai
-// ============================================================================
-
 class FalSeedream45API {
   constructor(apiKey) {
     this.apiKey = apiKey;
@@ -593,9 +531,6 @@ class FalSeedream45API {
 
   async generate(config) {
     const { prompt, refImageUrls, numImages, enableNSFW, size } = config;
-
-    console.log(`[FAL Seedream 4.5] Generating ${numImages} images...`);
-
     const [width, height] = size.split('x').map(Number);
 
     const requestBody = {
@@ -632,14 +567,9 @@ class FalSeedream45API {
       throw new Error('FAL returned no images');
     }
 
-    console.log(`[FAL Seedream 4.5] Generated ${images.length} images`);
     return images;
   }
 }
-
-// ============================================================================
-// SEEDREAM 4.5 API - Wavespeed
-// ============================================================================
 
 class WavespeedSeedream45API {
   constructor(apiKey) {
@@ -652,8 +582,6 @@ class WavespeedSeedream45API {
 
   async generate(config) {
     const { prompt, refImageUrls, numImages, size } = config;
-
-    console.log(`[Wavespeed Seedream 4.5] Generating ${numImages} images...`);
 
     // Wavespeed requires HTTP URLs, filter out data URIs
     const httpUrls = refImageUrls.filter(url => !url.startsWith('data:'));
@@ -675,7 +603,6 @@ class WavespeedSeedream45API {
       // Round to nearest 8 for better compatibility
       width = Math.ceil(width / 8) * 8;
       height = Math.ceil(height / 8) * 8;
-      console.log(`[Wavespeed Seedream 4.5] Scaled up to ${width}x${height} (min ${minPixels} pixels required)`);
     }
 
     const requestBody = {
@@ -705,7 +632,6 @@ class WavespeedSeedream45API {
     }
 
     const result = await response.json();
-    console.log(`[Wavespeed Seedream 4.5] Response: ${JSON.stringify(result).substring(0, 500)}`);
 
     // Check for failed status or error
     if (result.data?.status === 'failed' || result.data?.error) {
@@ -720,18 +646,12 @@ class WavespeedSeedream45API {
     const outputs = result.data?.outputs || result.outputs || result.images || result.data?.images || [];
 
     if (outputs.length === 0) {
-      console.log(`[Wavespeed Seedream 4.5] Full response: ${JSON.stringify(result)}`);
       throw new Error('Wavespeed returned no images - check if generation completed');
     }
 
-    console.log(`[Wavespeed Seedream 4.5] Generated ${outputs.length} images`);
     return outputs.map(item => typeof item === 'string' ? { url: item } : item);
   }
 }
-
-// ============================================================================
-// NANOBANANA PRO API - FAL.ai
-// ============================================================================
 
 class FalNanobanaProAPI {
   constructor(apiKey) {
@@ -744,8 +664,6 @@ class FalNanobanaProAPI {
 
   async generate(config) {
     const { prompt, refImageUrls, numImages, size } = config;
-
-    console.log(`[FAL Nanobanana Pro] Generating ${numImages} images...`);
 
     // Calculate aspect ratio from size
     const [width, height] = size.split('x').map(Number);
@@ -792,14 +710,9 @@ class FalNanobanaProAPI {
       throw new Error('FAL returned no images');
     }
 
-    console.log(`[FAL Nanobanana Pro] Generated ${images.length} images`);
     return images;
   }
 }
-
-// ============================================================================
-// NANOBANANA PRO API - Wavespeed
-// ============================================================================
 
 class WavespeedNanobanaProAPI {
   constructor(apiKey) {
@@ -812,8 +725,6 @@ class WavespeedNanobanaProAPI {
 
   async generate(config) {
     const { prompt, refImageUrls, numImages, size } = config;
-
-    console.log(`[Wavespeed Nanobanana Pro] Generating ${numImages} images...`);
 
     // Wavespeed requires HTTP URLs
     const httpUrls = refImageUrls.filter(url => !url.startsWith('data:'));
@@ -872,14 +783,9 @@ class WavespeedNanobanaProAPI {
       throw new Error('Wavespeed returned no images');
     }
 
-    console.log(`[Wavespeed Nanobanana Pro] Generated ${outputs.length} images`);
     return outputs.map(url => ({ url }));
   }
 }
-
-// ============================================================================
-// WAN 2.2 ANIMATE REPLACE API - FAL.ai
-// ============================================================================
 
 class FalWanAnimateAPI {
   constructor(apiKey) {
@@ -892,8 +798,6 @@ class FalWanAnimateAPI {
 
   async generate(config) {
     const { videoUrl, imageUrl, resolution } = config;
-
-    console.log(`[FAL WAN Animate] Generating video...`);
 
     const requestBody = {
       video_url: videoUrl,
@@ -931,8 +835,6 @@ class FalWanAnimateAPI {
       throw new Error('FAL did not return request_id');
     }
 
-    console.log(`[FAL WAN Animate] Job submitted: ${requestId}`);
-
     // Poll for result
     const pollIntervals = [5000, 10000, 15000, 20000, 30000];
     const maxAttempts = 100;
@@ -957,13 +859,10 @@ class FalWanAnimateAPI {
           }
         );
       } catch (fetchError) {
-        console.log(`[FAL WAN Animate] Status fetch error: ${fetchError.message}, retrying...`);
         continue;
       }
 
       if (!statusResponse.ok) {
-        const errorText = await statusResponse.text();
-        console.log(`[FAL WAN Animate] Status check failed (${statusResponse.status}): ${errorText.substring(0, 100)}, retrying...`);
         continue;
       }
 
@@ -988,32 +887,22 @@ class FalWanAnimateAPI {
         }
 
         const result = await resultResponse.json();
-        console.log(`[FAL WAN Animate] Result structure: ${JSON.stringify(result).substring(0, 500)}`);
 
         const videoResultUrl = result.video?.url;
 
         if (!videoResultUrl) {
-          console.log(`[FAL WAN Animate] Full result: ${JSON.stringify(result)}`);
           throw new Error('FAL returned no video URL in result');
         }
 
-        console.log(`[FAL WAN Animate] Video URL: ${videoResultUrl}`);
-        console.log(`[FAL WAN Animate] Video generated successfully`);
         return { url: videoResultUrl };
       } else if (status.status === 'FAILED') {
         throw new Error(`FAL job failed: ${status.error || 'Unknown error'}`);
       }
-
-      console.log(`[FAL WAN Animate] Status: ${status.status}, attempt ${attempt + 1}/${maxAttempts}`);
     }
 
     throw new Error('FAL job timed out');
   }
 }
-
-// ============================================================================
-// WAN 2.2 ANIMATE REPLACE API - Wavespeed
-// ============================================================================
 
 class WavespeedWanAnimateAPI {
   constructor(apiKey) {
@@ -1026,8 +915,6 @@ class WavespeedWanAnimateAPI {
 
   async generate(config) {
     const { videoUrl, imageUrl, resolution } = config;
-
-    console.log(`[Wavespeed WAN Animate] Generating video...`);
 
     const requestBody = {
       image: imageUrl,
@@ -1069,8 +956,6 @@ class WavespeedWanAnimateAPI {
       throw new Error('Wavespeed did not return request ID');
     }
 
-    console.log(`[Wavespeed WAN Animate] Job submitted: ${requestId}`);
-
     // Poll for result
     const pollIntervals = [5000, 10000, 15000, 20000, 30000];
     const maxAttempts = 100;
@@ -1091,7 +976,6 @@ class WavespeedWanAnimateAPI {
       );
 
       if (!statusResponse.ok) {
-        console.log(`[Wavespeed WAN Animate] Status check failed, retrying...`);
         continue;
       }
 
@@ -1104,22 +988,15 @@ class WavespeedWanAnimateAPI {
           throw new Error('Wavespeed returned no video');
         }
 
-        console.log(`[Wavespeed WAN Animate] Video generated successfully`);
         return { url: outputs[0] };
       } else if (status.data?.status === 'failed') {
         throw new Error(`Wavespeed job failed: ${status.data?.error || 'Unknown error'}`);
       }
-
-      console.log(`[Wavespeed WAN Animate] Status: ${status.data?.status}, attempt ${attempt + 1}/${maxAttempts}`);
     }
 
     throw new Error('Wavespeed job timed out');
   }
 }
-
-// ============================================================================
-// AIRTABLE FUNCTIONS
-// ============================================================================
 
 async function fetchAirtableRecords(tableName, filterFormula = '', fields = []) {
   const baseId = CONFIG.airtable.baseId;
@@ -1178,19 +1055,10 @@ async function updateAirtableRecord(tableName, recordId, fields) {
   return await response.json();
 }
 
-// ============================================================================
-// MAIN PROCESSING FUNCTION
-// ============================================================================
-
 async function main() {
-  console.log('\n' + '='.repeat(60));
-  console.log('TIKTOK REPLICATOR - Starting');
-  console.log('='.repeat(60));
+  console.log('Starting...');
 
   const apifyToken = CONFIG.apiKeys.apify;
-
-  // Step 1: Load Configuration from Airtable
-  console.log('\n[1/4] Loading configuration...');
 
   const configRecords = await fetchAirtableRecords('Configuration');
 
@@ -1201,22 +1069,14 @@ async function main() {
 
   const configFields = configRecords[0].fields;
 
-  // Extract settings
   const apiProvider = configFields.API_Provider || 'FAL.ai';
   const imageModel = configFields.Image_Model || 'Seedream 4.5';
   const numImages = configFields.num_images || 4;
   const videoResolution = configFields.Video_Resolution || '480p';
   const enableNSFW = configFields.Enable_NSFW || false;
 
-  // API Keys - from apis.json only
   const falApiKey = CONFIG.apiKeys.fal || '';
   const wavespeedApiKey = CONFIG.apiKeys.wavespeed || '';
-
-  console.log(`   Provider: ${apiProvider}`);
-  console.log(`   Image Model: ${imageModel}`);
-  console.log(`   Num Images: ${numImages}`);
-  console.log(`   Video Resolution: ${videoResolution}`);
-  console.log(`   Image Size: auto (from video dimensions)`);
 
   // Validate API keys
   if (apiProvider === 'FAL.ai' && !falApiKey) {
@@ -1256,12 +1116,6 @@ async function main() {
     videoAPI = new WavespeedWanAnimateAPI(wavespeedApiKey);
   }
 
-  console.log(`   Image API: ${imageAPI.getName()}`);
-  console.log(`   Video API: ${videoAPI.getName()}`);
-
-  // Step 2: Load records to process
-  console.log('\n[2/4] Loading records to process...');
-
   // Filter: records that have Link or Source_Video, have AI_Character, but no Output_Video
   // Try with Status filter first, fall back to simpler filter if Status field doesn't exist
   let records;
@@ -1270,7 +1124,6 @@ async function main() {
     records = await fetchAirtableRecords('Generation', filterWithStatus);
   } catch (error) {
     if (error.message.includes('Unknown field names') || error.message.includes('status')) {
-      console.log('   Note: Status field not found, using basic filter');
       const filterBasic = 'AND(OR({Link} != "", {Source_Video} != ""), {AI_Character} != "", {Output_Video} = "")';
       records = await fetchAirtableRecords('Generation', filterBasic);
     } else {
@@ -1283,7 +1136,7 @@ async function main() {
     return;
   }
 
-  console.log(`   Found ${records.length} records to process`);
+  console.log(`Processing ${records.length} records...`);
 
   // Initialize limiters
   const concurrencyLimiter = new ConcurrencyLimiter(2); // Lower concurrency for Apify
@@ -1291,27 +1144,20 @@ async function main() {
   const progressTracker = new ProgressTracker();
   progressTracker.setTotal(records.length);
 
-  // Step 3: Process each record
-  console.log('\n[3/4] Processing records...');
-
   const processRecord = async (record) => {
     const recordId = record.id;
     const fields = record.fields;
 
     try {
       if (!circuitBreaker.canProceed()) {
-        console.log(`[${recordId}] Circuit breaker open, skipping`);
         return;
       }
-
-      console.log(`\n--- Processing record ${recordId} ---`);
 
       // Mark as Processing to prevent duplicate runs (optional - may fail if Status field doesn't exist)
       try {
         await updateAirtableRecord('Generation', recordId, { 'Status': 'Processing' });
       } catch (statusError) {
         // Status field may not exist, continue anyway
-        console.log(`[${recordId}] Note: Could not set Status field`);
       }
 
       const link = fields.Link || '';
@@ -1334,14 +1180,11 @@ async function main() {
       if (sourceVideoAttachments.length > 0) {
         // Video already uploaded - use it directly
         videoUrl = sourceVideoAttachments[0].url;
-        console.log(`[${recordId}] Using uploaded video`);
 
         // If no cover, we need to get it from Apify or use a placeholder
         if (existingCover.length > 0) {
           coverUrl = existingCover[0].url;
         }
-        // Use default dimensions for uploaded videos (TikTok portrait)
-        console.log(`[${recordId}] Using default dimensions: ${imageWidth}x${imageHeight}`);
       } else if (link) {
         // Fetch video from TikTok/Instagram
         const platform = detectPlatform(link);
@@ -1361,8 +1204,6 @@ async function main() {
         coverUrl = result.coverUrl;
         imageWidth = result.width;
         imageHeight = result.height;
-
-        console.log(`[${recordId}] Detected dimensions: ${imageWidth}x${imageHeight}`);
 
         // Save video URL and cover to Airtable
         const updateFields = {
@@ -1389,7 +1230,6 @@ async function main() {
       let generatedImages;
 
       if (existingGeneratedImages.length > 0) {
-        console.log(`[${recordId}] Using existing generated images`);
         generatedImages = existingGeneratedImages;
       } else {
         // Prepare reference images for image generation
@@ -1409,7 +1249,6 @@ async function main() {
 
         // Use detected dimensions from video
         const imageSize = `${imageWidth}x${imageHeight}`;
-        console.log(`[${recordId}] Generating images at ${imageSize}`);
 
         const images = await imageAPI.generate({
           prompt,
@@ -1448,12 +1287,11 @@ async function main() {
         await updateAirtableRecord('Generation', recordId, { 'Status': 'Complete' });
       } catch {}
 
-      console.log(`[${recordId}] SUCCESS - Video generated`);
       circuitBreaker.recordSuccess();
       progressTracker.increment(true);
 
     } catch (error) {
-      console.error(`[${recordId}] ERROR: ${error.message}`);
+      console.error(`[${recordId}] ${error.message}`);
       circuitBreaker.recordFailure();
       progressTracker.increment(false);
 
@@ -1485,14 +1323,8 @@ async function main() {
 
   clearInterval(progressInterval);
 
-  // Step 4: Final summary
-  console.log('\n[4/4] Complete!');
   progressTracker.showFinalSummary();
 }
-
-// ============================================================================
-// RUN
-// ============================================================================
 
 main().catch(error => {
   console.error('Fatal error:', error);
