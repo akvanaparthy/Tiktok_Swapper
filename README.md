@@ -154,6 +154,10 @@ Logs are written to:
 - `logs/error.log`: Error logs only
 - Console: Colored output for development
 
+**View logs in browser:**
+- Open `logs/viewer.html` in your browser for a visual log viewer
+- Features: Filter by level (error/warn/info), search, expand details, statistics
+
 ## Migration from v1.x
 
 **v2.0 now uses `.env` files with separate image/video API keys:**
@@ -176,7 +180,11 @@ console.log(queue.getStats());
 
 **View logs:**
 ```bash
+# In terminal
 tail -f logs/combined.log
+
+# Or use the visual log viewer
+# Open logs/viewer.html in your browser
 ```
 
 **Reset failed jobs:**

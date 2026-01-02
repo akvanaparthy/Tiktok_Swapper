@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Swapper - Log Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .controls {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-wrapper label {
+            background: #0e639c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+
+        .file-input-wrapper label:hover {
+            background: #1177bb;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #3c3c3c;
+            background: #2d2d30;
+            color: #d4d4d4;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover {
+            border-color: #555;
+        }
+
+        .filter-btn.active {
+            border-color: #0e639c;
+            background: #094771;
+            color: #fff;
+        }
+
+        .search-box {
+            padding: 8px 12px;
+            background: #3c3c3c;
+            border: 2px solid #3c3c3c;
+            color: #d4d4d4;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 300px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #0e639c;
+        }
+
+        .stats {
+            background: #252526;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #858585;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .log-table {
+            background: #252526;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            display: grid;
+            grid-template-columns: 180px 80px 120px 1fr 100px;
+            gap: 15px;
+            padding: 15px 20px;
+            background: #2d2d30;
+            border-bottom: 2px solid #3c3c3c;
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .log-entries {
+            max-height: calc(100vh - 350px);
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            display: grid;
+            grid-template-columns: 180px 80px 120px 1fr 100px;
+            gap: 15px;
+            padding: 12px 20px;
+            border-bottom: 1px solid #3c3c3c;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .log-entry:hover {
+            background: #2d2d30;
+        }
+
+        .log-entry.hidden {
+            display: none;
+        }
+
+        .timestamp {
+            color: #858585;
+            font-family: 'Courier New', monospace;
+        }
+
+        .level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .level.error {
+            background: #f14c4c;
+            color: #fff;
+        }
+
+        .level.warn {
+            background: #cca700;
+            color: #000;
+        }
+
+        .level.info {
+            background: #0e639c;
+            color: #fff;
+        }
+
+        .level.debug {
+            background: #858585;
+            color: #fff;
+        }
+
+        .record-id {
+            color: #4ec9b0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .message {
+            color: #d4d4d4;
+            word-break: break-word;
+        }
+
+        .expand-btn {
+            background: transparent;
+            border: 1px solid #3c3c3c;
+            color: #858585;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .expand-btn:hover {
+            border-color: #0e639c;
+            color: #0e639c;
+        }
+
+        .details {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            border-left: 3px solid #0e639c;
+        }
+
+        .details pre {
+            color: #ce9178;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: #858585;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3c3c3c;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+
+        .clear-btn {
+            padding: 8px 16px;
+            background: #a1260d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: #c72e0d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TikTok Swapper - Log Viewer</h1>
+
+        <div class="controls">
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".log">
+                <label for="fileInput">Load Log File</label>
+            </div>
+
+            <div class="filter-group">
+                <button class="filter-btn active" data-level="all">All</button>
+                <button class="filter-btn" data-level="error">Errors</button>
+                <button class="filter-btn" data-level="warn">Warnings</button>
+                <button class="filter-btn" data-level="info">Info</button>
+                <button class="filter-btn" data-level="debug">Debug</button>
+            </div>
+
+            <input type="text" class="search-box" id="searchBox" placeholder="Search logs...">
+
+            <button class="clear-btn" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-item">
+                <span class="stat-label">Total:</span>
+                <span class="stat-value" id="totalCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Errors:</span>
+                <span class="stat-value" style="color: #f14c4c;" id="errorCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Warnings:</span>
+                <span class="stat-value" style="color: #cca700;" id="warnCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Info:</span>
+                <span class="stat-value" style="color: #0e639c;" id="infoCount">0</span>
+            </div>
+        </div>
+
+        <div class="log-table">
+            <div class="log-header">
+                <div>Timestamp</div>
+                <div>Level</div>
+                <div>Record ID</div>
+                <div>Message</div>
+                <div>Actions</div>
+            </div>
+            <div class="log-entries" id="logEntries">
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>No logs loaded. Click "Load Log File" to view logs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        const fileInput = document.getElementById('fileInput');
+        const logEntries = document.getElementById('logEntries');
+        const searchBox = document.getElementById('searchBox');
+        const clearBtn = document.getElementById('clearBtn');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Load file
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                parseLogFile(event.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        // Parse log file
+        function parseLogFile(content) {
+            allLogs = [];
+            const lines = content.trim().split('\n');
+
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                try {
+                    const log = JSON.parse(line);
+                    allLogs.push(log);
+                } catch (e) {
+                    console.error('Failed to parse log line:', line);
+                }
+            });
+
+            allLogs.reverse(); // Show newest first
+            updateStats();
+            renderLogs();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                total: allLogs.length,
+                error: allLogs.filter(l => l.level === 'error').length,
+                warn: allLogs.filter(l => l.level === 'warn').length,
+                info: allLogs.filter(l => l.level === 'info').length
+            };
+
+            document.getElementById('totalCount').textContent = stats.total;
+            document.getElementById('errorCount').textContent = stats.error;
+            document.getElementById('warnCount').textContent = stats.warn;
+            document.getElementById('infoCount').textContent = stats.info;
+        }
+
+        // Render logs
+        function renderLogs() {
+            const filtered = allLogs.filter(log => {
+                // Level filter
+                if (currentFilter !== 'all' && log.level !== currentFilter) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchQuery) {
+                    const searchStr = JSON.stringify(log).toLowerCase();
+                    return searchStr.includes(searchQuery.toLowerCase());
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                logEntries.innerHTML = '<div class="empty-state"><p>No logs match the current filters.</p></div>';
+                return;
+            }
+
+            logEntries.innerHTML = filtered.map((log, index) => {
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const recordId = log.recordId || '-';
+                const message = log.message || '';
+                const hasDetails = log.stack || log.error || Object.keys(log).length > 4;
+
+                return `
+                    <div class="log-entry" data-index="${index}">
+                        <div class="timestamp">${timestamp}</div>
+                        <div><span class="level ${log.level}">${log.level}</span></div>
+                        <div class="record-id">${recordId}</div>
+                        <div class="message">${escapeHtml(message)}</div>
+                        <div>
+                            ${hasDetails ? `<button class="expand-btn" onclick="toggleDetails(${index})">Details</button>` : ''}
+                        </div>
+                        <div class="details" id="details-${index}" style="display: none;">
+                            <pre>${escapeHtml(JSON.stringify(log, null, 2))}</pre>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle details
+        window.toggleDetails = function(index) {
+            const details = document.getElementById(`details-${index}`);
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        };
+
+        // Filter buttons
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.level;
+                renderLogs();
+            });
+        });
+
+        // Search
+        searchBox.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderLogs();
+        });
+
+        // Clear
+        clearBtn.addEventListener('click', () => {
+            allLogs = [];
+            currentFilter = 'all';
+            searchQuery = '';
+            searchBox.value = '';
+            filterBtns.forEach(b => b.classList.remove('active'));
+            filterBtns[0].classList.add('active');
+            updateStats();
+            logEntries.innerHTML = '<div class="empty-state"><p>No logs loaded. Click "Load Log File" to view logs.</p></div>';
+        });
+
+        // Utility function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-load combined.log if available
+        window.addEventListener('load', () => {
+            fetch('combined.log')
+                .then(response => response.text())
+                .then(content => {
+                    parseLogFile(content);
+                })
+                .catch(() => {
+                    // File not found, show empty state
+                });
+        });
+    </script>
+</body>
+</html>
