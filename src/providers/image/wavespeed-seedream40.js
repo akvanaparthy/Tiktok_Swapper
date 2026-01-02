@@ -1,8 +1,8 @@
 import logger from '../../utils/logger.js';
 
 export class WavespeedSeedream40 {
-  constructor(apiKey, httpsAgent) {
-    this.apiKey = apiKey;
+  constructor(getApiKey, httpsAgent) {
+    this.getApiKey = getApiKey;
     this.httpsAgent = httpsAgent;
   }
 
@@ -17,6 +17,8 @@ export class WavespeedSeedream40 {
     if (httpUrls.length === 0) {
       throw new Error('Wavespeed requires HTTP URLs, no valid URLs provided');
     }
+
+    const apiKey = typeof this.getApiKey === 'function' ? this.getApiKey() : this.getApiKey;
 
     logger.info('Generating images with Wavespeed Seedream 4.0', { numImages, size });
 
@@ -44,7 +46,7 @@ export class WavespeedSeedream40 {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody),

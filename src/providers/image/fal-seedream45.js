@@ -1,8 +1,8 @@
 import logger from '../../utils/logger.js';
 
 export class FalSeedream45 {
-  constructor(apiKey, httpsAgent) {
-    this.apiKey = apiKey;
+  constructor(getApiKey, httpsAgent) {
+    this.getApiKey = getApiKey; // Function that returns current API key
     this.httpsAgent = httpsAgent;
   }
 
@@ -13,6 +13,9 @@ export class FalSeedream45 {
   async generate(config) {
     const { prompt, refImageUrls, numImages, enableNSFW, size } = config;
     const [width, height] = size.split('x').map(Number);
+
+    // Get current API key from rotation
+    const apiKey = typeof this.getApiKey === 'function' ? this.getApiKey() : this.getApiKey;
 
     logger.info('Generating images with FAL Seedream 4.5', { numImages, size });
 
@@ -29,7 +32,7 @@ export class FalSeedream45 {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${this.apiKey}`,
+          'Authorization': `Key ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody),

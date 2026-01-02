@@ -2,8 +2,8 @@ import { sleep } from '../../utils/concurrency.js';
 import logger from '../../utils/logger.js';
 
 export class FalWan {
-  constructor(apiKey, httpsAgent) {
-    this.apiKey = apiKey;
+  constructor(getApiKey, httpsAgent) {
+    this.getApiKey = getApiKey;
     this.httpsAgent = httpsAgent;
   }
 
@@ -13,6 +13,8 @@ export class FalWan {
 
   async generate(config) {
     const { videoUrl, imageUrl, resolution } = config;
+
+    const apiKey = typeof this.getApiKey === 'function' ? this.getApiKey() : this.getApiKey;
 
     logger.info('Generating video with FAL WAN Animate', { resolution });
 
@@ -31,7 +33,7 @@ export class FalWan {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${this.apiKey}`,
+          'Authorization': `Key ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody),
@@ -69,7 +71,7 @@ export class FalWan {
           {
             method: 'GET',
             headers: {
-              'Authorization': `Key ${this.apiKey}`
+              'Authorization': `Key ${apiKey}`
             },
             agent: this.httpsAgent,
             signal: AbortSignal.timeout(30000)
@@ -91,7 +93,7 @@ export class FalWan {
           {
             method: 'GET',
             headers: {
-              'Authorization': `Key ${this.apiKey}`
+              'Authorization': `Key ${apiKey}`
             },
             agent: this.httpsAgent
           }

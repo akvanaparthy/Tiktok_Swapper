@@ -37,9 +37,9 @@ tiktok-swapper/
 ## Setup
 
 1. **Configure credentials:**
-   - Use `config-gui.html` to configure your API keys (same as before)
-   - Or manually edit `apis.json`
-   - Or use `.env` file (copy from `.env.example`)
+   - Copy `.env.example` to `.env`
+   - Fill in your API credentials
+   - **Multiple API Keys Supported!** Add FAL_API_KEY_1, FAL_API_KEY_2, etc. for automatic rotation
 
 2. **Configure Airtable:**
    - Create a `Configuration` table with fields:
@@ -76,20 +76,54 @@ npm run dev
 
 ### Environment Variables
 
+**Required:**
+- `AIRTABLE_TOKEN`: Your Airtable API token
+- `AIRTABLE_BASE_ID`: Your Airtable base ID
+- `APIFY_TOKEN`: Your Apify API token (for video scraping)
+
+**API Keys (add multiple for automatic rotation):**
+- `FAL_API_KEY_1`, `FAL_API_KEY_2`, `FAL_API_KEY_3`, ... (FAL.ai keys)
+- `WAVESPEED_API_KEY_1`, `WAVESPEED_API_KEY_2`, ... (Wavespeed keys)
+
+**API Rotation Settings:**
+- `FAL_REQUESTS_PER_KEY`: How many requests each FAL key handles before rotating (default: 1)
+- `WAVESPEED_REQUESTS_PER_KEY`: How many requests each Wavespeed key handles before rotating (default: 1)
+- Set to `0` or `1` for round-robin (alternates every request)
+- Set to higher number (e.g., `10`) to use each key 10 times before rotating
+
+**Optional:**
 - `LOG_LEVEL`: Logging level (debug, info, warn, error) - default: info
-- `AIRTABLE_TOKEN`: Airtable API token
-- `AIRTABLE_BASE_ID`: Airtable base ID
-- `APIFY_TOKEN`: Apify API token
-- `FAL_API_KEY`: FAL.ai API key
-- `WAVESPEED_API_KEY`: Wavespeed API key
+- `CONCURRENCY`: Max concurrent jobs (default: 2)
 
 ### Processing Options
 
 Edit `src/config/index.js` to adjust:
-- `processing.concurrency`: Max concurrent jobs (default: 2)
 - `processing.maxRetries`: Max retry attempts (default: 3)
 - `circuitBreaker.failureThreshold`: Failures before circuit opens (default: 5)
 - `circuitBreaker.cooldownMs`: Cooldown period in ms (default: 60000)
+
+## API Rotation (Multiple API Keys)
+
+**Why use multiple API keys?**
+- Bypass rate limits by distributing requests across multiple keys
+- Increase throughput and reliability
+- Automatic failover if one key has issues
+
+**How it works:**
+1. Add multiple keys: `FAL_API_KEY_1=key1`, `FAL_API_KEY_2=key2`, etc.
+2. System automatically rotates between keys
+3. State persisted in database - resumes correctly after restart
+4. Separate rotation for image gen and video gen
+
+**Example `.env` for 3 FAL keys:**
+```bash
+FAL_API_KEY_1=fal_key_abc123
+FAL_API_KEY_2=fal_key_def456
+FAL_API_KEY_3=fal_key_ghi789
+FAL_REQUESTS_PER_KEY=5  # Use each key 5 times before rotating
+```
+
+Result: Key 1 → 5 requests → Key 2 → 5 requests → Key 3 → 5 requests → Key 1 (loop)
 
 ## Job Queue
 
@@ -107,9 +141,13 @@ Logs are written to:
 - `logs/error.log`: Error logs only
 - Console: Colored output for development
 
-## Migration from v1.0
+## Migration from v1.x
 
-Your existing `apis.json` and `config-gui.html` continue to work. The new modular architecture is fully backward compatible.
+**v2.0 now uses `.env` files instead of `apis.json`:**
+
+1. Copy `.env.example` to `.env`
+2. Transfer your credentials from old `apis.json` to `.env`
+3. **Bonus:** Add multiple API keys for automatic rotation!
 
 ## Troubleshooting
 

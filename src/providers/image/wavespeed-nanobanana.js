@@ -1,8 +1,8 @@
 import logger from '../../utils/logger.js';
 
 export class WavespeedNanobanana {
-  constructor(apiKey, httpsAgent) {
-    this.apiKey = apiKey;
+  constructor(getApiKey, httpsAgent) {
+    this.getApiKey = getApiKey;
     this.httpsAgent = httpsAgent;
   }
 
@@ -17,6 +17,8 @@ export class WavespeedNanobanana {
     if (httpUrls.length === 0) {
       throw new Error('Wavespeed requires HTTP URLs');
     }
+
+    const apiKey = typeof this.getApiKey === 'function' ? this.getApiKey() : this.getApiKey;
 
     logger.info('Generating images with Wavespeed Nanobanana Pro', { numImages, size });
 
@@ -44,7 +46,7 @@ export class WavespeedNanobanana {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody),

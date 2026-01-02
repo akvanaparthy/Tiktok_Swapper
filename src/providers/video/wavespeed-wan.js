@@ -2,8 +2,8 @@ import { sleep } from '../../utils/concurrency.js';
 import logger from '../../utils/logger.js';
 
 export class WavespeedWan {
-  constructor(apiKey, httpsAgent) {
-    this.apiKey = apiKey;
+  constructor(getApiKey, httpsAgent) {
+    this.getApiKey = getApiKey;
     this.httpsAgent = httpsAgent;
   }
 
@@ -13,6 +13,8 @@ export class WavespeedWan {
 
   async generate(config) {
     const { videoUrl, imageUrl, resolution } = config;
+
+    const apiKey = typeof this.getApiKey === 'function' ? this.getApiKey() : this.getApiKey;
 
     logger.info('Generating video with Wavespeed WAN Animate', { resolution });
 
@@ -30,7 +32,7 @@ export class WavespeedWan {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody),

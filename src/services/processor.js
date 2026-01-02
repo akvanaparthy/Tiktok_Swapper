@@ -8,6 +8,7 @@ import { fetchTikTokVideo } from '../providers/scraper/tiktok.js';
 import { fetchInstagramReel } from '../providers/scraper/instagram.js';
 import { createImageProvider, createVideoProvider } from '../providers/factory.js';
 import JobQueue from './queue.js';
+import ApiRotationManager from './api-rotation.js';
 
 const httpsAgent = new https.Agent({
   keepAlive: true,
@@ -20,6 +21,7 @@ const httpsAgent = new https.Agent({
 export class Processor {
   constructor() {
     this.queue = new JobQueue();
+    this.rotationManager = new ApiRotationManager();
     this.concurrencyLimiter = new ConcurrencyLimiter(config.processing.concurrency);
     this.circuitBreaker = new CircuitBreaker(
       config.circuitBreaker.failureThreshold,
@@ -51,21 +53,24 @@ export class Processor {
     const videoResolution = configFields.Video_Resolution || '480p';
     const enableNSFW = configFields.Enable_NSFW || false;
 
-    const falApiKey = config.apiKeys.fal || '';
-    const wavespeedApiKey = config.apiKeys.wavespeed || '';
+    const falApiKeys = config.apiKeys.fal;
+    const wavespeedApiKeys = config.apiKeys.wavespeed;
 
     // Validate API keys
-    if (apiProvider === 'FAL.ai' && !falApiKey) {
+    if (apiProvider === 'FAL.ai' && falApiKeys.length === 0) {
       throw new Error('FAL.ai API key is missing');
     }
-    if (apiProvider === 'Wavespeed' && !wavespeedApiKey) {
+    if (apiProvider === 'Wavespeed' && wavespeedApiKeys.length === 0) {
       throw new Error('Wavespeed API key is missing');
     }
 
-    const apiKey = apiProvider === 'FAL.ai' ? falApiKey : wavespeedApiKey;
+    const apiKeys = apiProvider === 'FAL.ai' ? falApiKeys : wavespeedApiKeys;
+    const requestsPerKey = apiProvider === 'FAL.ai' ?
+      config.apiRotation.fal.requestsPerKey :
+      config.apiRotation.wavespeed.requestsPerKey;
 
-    const imageAPI = createImageProvider(apiProvider, imageModel, apiKey, httpsAgent);
-    const videoAPI = createVideoProvider(apiProvider, apiKey, httpsAgent);
+    const imageAPI = createImageProvider(apiProvider, imageModel, apiKeys, requestsPerKey, this.rotationManager, httpsAgent);
+    const videoAPI = createVideoProvider(apiProvider, apiKeys, requestsPerKey, this.rotationManager, httpsAgent);
 
     logger.info('Configuration loaded', {
       apiProvider,
@@ -73,7 +78,9 @@ export class Processor {
       imageAPI: imageAPI.getName(),
       videoAPI: videoAPI.getName(),
       numImages,
-      videoResolution
+      videoResolution,
+      apiKeyCount: apiKeys.length,
+      requestsPerKey
     });
 
     return {

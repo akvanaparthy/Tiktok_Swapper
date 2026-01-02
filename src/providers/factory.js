@@ -7,34 +7,46 @@ import { WavespeedNanobanana } from './image/wavespeed-nanobanana.js';
 import { FalWan } from './video/fal-wan.js';
 import { WavespeedWan } from './video/wavespeed-wan.js';
 
-export function createImageProvider(apiProvider, imageModel, apiKey, httpsAgent) {
+export function createImageProvider(apiProvider, imageModel, apiKeys, requestsPerKey, rotationManager, httpsAgent) {
+  // Create a wrapper that gets the next API key on each request
+  const getApiKey = () => {
+    const provider = apiProvider === 'FAL.ai' ? 'fal-image' : 'wavespeed-image';
+    return rotationManager.getNextKey(provider, apiKeys, requestsPerKey);
+  };
+
   if (apiProvider === 'FAL.ai') {
     if (imageModel === 'Seedream 4.0') {
-      return new FalSeedream40(apiKey, httpsAgent);
+      return new FalSeedream40(getApiKey, httpsAgent);
     } else if (imageModel === 'Seedream 4.5') {
-      return new FalSeedream45(apiKey, httpsAgent);
+      return new FalSeedream45(getApiKey, httpsAgent);
     } else if (imageModel === 'Nanobanana Pro') {
-      return new FalNanobanana(apiKey, httpsAgent);
+      return new FalNanobanana(getApiKey, httpsAgent);
     } else {
-      return new FalSeedream45(apiKey, httpsAgent);
+      return new FalSeedream45(getApiKey, httpsAgent);
     }
   } else {
     if (imageModel === 'Seedream 4.0') {
-      return new WavespeedSeedream40(apiKey, httpsAgent);
+      return new WavespeedSeedream40(getApiKey, httpsAgent);
     } else if (imageModel === 'Seedream 4.5') {
-      return new WavespeedSeedream45(apiKey, httpsAgent);
+      return new WavespeedSeedream45(getApiKey, httpsAgent);
     } else if (imageModel === 'Nanobanana Pro') {
-      return new WavespeedNanobanana(apiKey, httpsAgent);
+      return new WavespeedNanobanana(getApiKey, httpsAgent);
     } else {
-      return new WavespeedSeedream45(apiKey, httpsAgent);
+      return new WavespeedSeedream45(getApiKey, httpsAgent);
     }
   }
 }
 
-export function createVideoProvider(apiProvider, apiKey, httpsAgent) {
+export function createVideoProvider(apiProvider, apiKeys, requestsPerKey, rotationManager, httpsAgent) {
+  // Create a wrapper that gets the next API key on each request
+  const getApiKey = () => {
+    const provider = apiProvider === 'FAL.ai' ? 'fal-video' : 'wavespeed-video';
+    return rotationManager.getNextKey(provider, apiKeys, requestsPerKey);
+  };
+
   if (apiProvider === 'FAL.ai') {
-    return new FalWan(apiKey, httpsAgent);
+    return new FalWan(getApiKey, httpsAgent);
   } else {
-    return new WavespeedWan(apiKey, httpsAgent);
+    return new WavespeedWan(getApiKey, httpsAgent);
   }
 }
