@@ -73,7 +73,7 @@ export class WavespeedWan {
         {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`
+            'Authorization': `Bearer ${apiKey}`
           },
           agent: this.httpsAgent
         }
@@ -83,19 +83,19 @@ export class WavespeedWan {
         continue;
       }
 
-      const status = await statusResponse.json();
+      const statusData = await statusResponse.json();
 
-      if (status.data?.status === 'completed') {
-        const outputs = status.data?.outputs || [];
+      if (statusData.status === 'completed') {
+        const outputs = statusData.outputs || [];
 
         if (outputs.length === 0) {
           throw new Error('Wavespeed returned no video');
         }
 
-        logger.info('Video generated successfully');
+        logger.info('Video generated successfully', { url: outputs[0] });
         return { url: outputs[0] };
-      } else if (status.data?.status === 'failed') {
-        throw new Error(`Wavespeed job failed: ${status.data?.error || 'Unknown error'}`);
+      } else if (statusData.status === 'failed') {
+        throw new Error(`Wavespeed job failed: ${statusData.error || 'Unknown error'}`);
       }
     }
 
