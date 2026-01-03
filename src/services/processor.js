@@ -109,7 +109,7 @@ export class Processor {
 
     let records;
     try {
-      const filterWithStatus = 'AND(OR({Link} != "", {Source_Video} != ""), {AI_Character} != "", {Output_Video} = "", {Status} != "Processing")';
+      const filterWithStatus = 'AND(OR({Link} != "", {Source_Video} != ""), {AI_Character} != "", {Output_Video} = "", OR({Status} = "", AND({Status} != "Processing", {Status} != "Completed")))';
       records = await fetchAirtableRecords('Generation', filterWithStatus, [], httpsAgent);
     } catch (error) {
       if (error.message.includes('Unknown field names') || error.message.includes('status')) {
