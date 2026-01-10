@@ -38,6 +38,13 @@ export async function updateAirtableRecord(tableName, recordId, fields, httpsAge
   const baseId = config.airtable.baseId;
   const token = config.airtable.token;
 
+  logger.debug('Updating Airtable record', {
+    table: tableName,
+    recordId,
+    fields: Object.keys(fields),
+    hasOutputVideo: !!fields.Output_Video
+  });
+
   const response = await fetch(
     `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`,
     {
@@ -53,9 +60,20 @@ export async function updateAirtableRecord(tableName, recordId, fields, httpsAge
 
   if (!response.ok) {
     const errorText = await response.text();
+    logger.error('Airtable update failed', {
+      table: tableName,
+      recordId,
+      status: response.status,
+      error: errorText.substring(0, 500)
+    });
     throw new Error(`Airtable update error ${response.status}: ${errorText}`);
   }
 
-  logger.debug('Updated Airtable record', { table: tableName, recordId });
-  return await response.json();
+  const result = await response.json();
+  logger.debug('Updated Airtable record successfully', {
+    table: tableName,
+    recordId,
+    updatedFields: Object.keys(fields)
+  });
+  return result;
 }

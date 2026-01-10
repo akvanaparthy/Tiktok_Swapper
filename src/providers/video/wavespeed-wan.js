@@ -85,17 +85,46 @@ export class WavespeedWan {
 
       const statusData = await statusResponse.json();
 
-      if (statusData.status === 'completed') {
-        const outputs = statusData.outputs || [];
+      logger.debug('Wavespeed status check', {
+        attempt,
+        status: statusData.status,
+        hasData: !!statusData.data,
+        hasOutputs: !!statusData.outputs,
+        fullResponse: JSON.stringify(statusData).substring(0, 500)
+      });
 
-        if (outputs.length === 0) {
-          throw new Error('Wavespeed returned no video');
+      if (statusData.status === 'completed') {
+        // Check multiple possible response structures
+        let videoUrl = null;
+
+        // Structure 1: outputs array (old format)
+        if (statusData.outputs && statusData.outputs.length > 0) {
+          videoUrl = statusData.outputs[0];
+        }
+        // Structure 2: data.outputs array
+        else if (statusData.data?.outputs && statusData.data.outputs.length > 0) {
+          videoUrl = statusData.data.outputs[0];
+        }
+        // Structure 3: data.video (new format based on user's JSON)
+        else if (statusData.data?.video) {
+          videoUrl = statusData.data.video;
+        }
+        // Structure 4: video directly on statusData
+        else if (statusData.video) {
+          videoUrl = statusData.video;
         }
 
-        logger.info('Video generated successfully', { url: outputs[0] });
-        return { url: outputs[0] };
+        if (!videoUrl) {
+          logger.error('Wavespeed completed but no video URL found', {
+            statusData: JSON.stringify(statusData)
+          });
+          throw new Error('Wavespeed returned no video URL');
+        }
+
+        logger.info('Video generated successfully', { url: videoUrl });
+        return { url: videoUrl };
       } else if (statusData.status === 'failed') {
-        throw new Error(`Wavespeed job failed: ${statusData.error || 'Unknown error'}`);
+        throw new Error(`Wavespeed job failed: ${statusData.error || statusData.data?.error || 'Unknown error'}`);
       }
     }
 

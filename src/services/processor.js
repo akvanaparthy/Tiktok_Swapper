@@ -37,38 +37,10 @@ export class Processor {
   }
 
   async extractVideoThumbnail(videoUrl) {
-    // Use a simple approach: fetch video metadata to get thumbnail
-    // For most video hosting services, thumbnails are available
-    // For Airtable attachments, we'll use a thumbnail extraction service
-
-    logger.debug('Extracting thumbnail from video', { videoUrl });
-
-    // Try using thumbsnap.com API (free service for video thumbnails)
-    try {
-      const thumbnailService = `https://api.thumbnail.ws/api/${encodeURIComponent(videoUrl)}/large`;
-      const response = await fetch(thumbnailService, {
-        method: 'GET',
-        agent: httpsAgent
-      });
-
-      if (response.ok) {
-        const thumbnailUrl = response.url;
-        logger.info('Successfully extracted thumbnail', { videoUrl, thumbnailUrl });
-        return thumbnailUrl;
-      }
-    } catch (error) {
-      logger.debug('Thumbnail service failed, trying alternative', { error: error.message });
-    }
-
-    // Alternative: use screenshot.rocks API
-    try {
-      const screenshotUrl = `https://api.screenshotmachine.com?key=demo&url=${encodeURIComponent(videoUrl)}&device=desktop&dimension=720x1280&format=jpg&delay=2000`;
-      logger.info('Using screenshot service for thumbnail', { screenshotUrl });
-      return screenshotUrl;
-    } catch (error) {
-      logger.error('All thumbnail extraction methods failed', { error: error.message });
-      throw new Error('Failed to extract thumbnail from video');
-    }
+    // For now, just return null - we'll use the video URL directly as fallback
+    // External thumbnail services require API keys and are not reliable
+    logger.debug('Skipping thumbnail extraction, will use video URL as fallback', { videoUrl });
+    return null;
   }
 
   async loadConfiguration() {
@@ -312,10 +284,26 @@ export class Processor {
       // Generate video with WAN Animate
       const selectedImageUrl = generatedImages[0].url;
 
+      logger.info('Starting video generation', {
+        recordId,
+        videoUrl,
+        selectedImageUrl,
+        resolution: processingConfig.videoResolution
+      });
+
       const videoResult = await processingConfig.videoAPI.generate({
         videoUrl: videoUrl,
         imageUrl: selectedImageUrl,
         resolution: processingConfig.videoResolution
+      });
+
+      if (!videoResult || !videoResult.url) {
+        throw new Error('Video generation returned no URL');
+      }
+
+      logger.info('Video generation completed, saving to Airtable', {
+        recordId,
+        outputVideoUrl: videoResult.url
       });
 
       // Save output video to Airtable
@@ -323,6 +311,8 @@ export class Processor {
         'Output_Video': [{ url: videoResult.url }],
         'Error_Message': ''
       }, httpsAgent);
+
+      logger.info('Output video saved to Airtable successfully', { recordId });
 
       // Update Status
       try {
