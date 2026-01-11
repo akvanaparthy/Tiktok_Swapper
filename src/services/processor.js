@@ -181,27 +181,25 @@ export class Processor {
         videoUrl = sourceVideoAttachments[0].url;
         if (existingCover.length > 0) {
           coverUrl = existingCover[0].url;
-        } else {
-          // Generate a thumbnail from the video using a simple method
-          // Use the video URL with a timestamp parameter to extract first frame
-          // Note: This assumes the hosting service supports frame extraction
-          // For Airtable attachments, we'll use a thumbnail extraction service
-          try {
-            coverUrl = await this.extractVideoThumbnail(videoUrl);
-            if (coverUrl) {
-              await updateAirtableRecord('Generation', recordId, {
-                'Cover_Image': [{ url: coverUrl }]
-              }, httpsAgent);
-            }
-          } catch (thumbError) {
-            logger.warn('Failed to extract thumbnail from video, will try without cover', {
-              recordId,
-              error: thumbError.message
-            });
-            // Continue without cover - will use video URL directly
-            coverUrl = videoUrl;
-          }
+          logger.info('Using existing Cover_Image, skipping generation', { recordId });
         }
+        // TEMPORARILY DISABLED: Thumbnail extraction from source video
+        // else {
+        //   try {
+        //     coverUrl = await this.extractVideoThumbnail(videoUrl);
+        //     if (coverUrl) {
+        //       await updateAirtableRecord('Generation', recordId, {
+        //         'Cover_Image': [{ url: coverUrl }]
+        //       }, httpsAgent);
+        //     }
+        //   } catch (thumbError) {
+        //     logger.warn('Failed to extract thumbnail from video, will try without cover', {
+        //       recordId,
+        //       error: thumbError.message
+        //     });
+        //     coverUrl = videoUrl;
+        //   }
+        // }
       } else if (link) {
         const platform = detectPlatform(link);
 
@@ -237,6 +235,7 @@ export class Processor {
       if (!coverUrl) {
         if (existingCover.length > 0) {
           coverUrl = existingCover[0].url;
+          logger.info('Using existing Cover_Image from fallback check', { recordId });
         } else {
           // Last resort: use the video URL itself (some APIs can handle video URLs)
           logger.warn('No cover image available, using video URL as fallback', { recordId });
@@ -248,8 +247,13 @@ export class Processor {
       let generatedImages;
 
       if (existingGeneratedImages.length > 0) {
+        logger.info('Using existing Generated_Images, skipping image generation', {
+          recordId,
+          count: existingGeneratedImages.length
+        });
         generatedImages = existingGeneratedImages;
       } else {
+        logger.info('No existing Generated_Images found, starting image generation', { recordId });
         // Prepare reference images
         let refImageUrls;
 
